@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 import jwt
@@ -99,7 +99,12 @@ def register(
     )
     db.add(user)
 
-    merchant = Merchant(id=uuid4(), name=payload.merchant_name)
+    merchant = Merchant(
+        id=uuid4(),
+        name=payload.merchant_name,
+        phone=payload.merchant_phone,
+        address=payload.merchant_address,
+    )
     db.add(merchant)
     membership = MerchantMembership(
         user_id=user.id,
@@ -134,6 +139,21 @@ def login(
     form: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ) -> TokenResponse:
+    ip_address = request.client.host if request.client else None
+    if ip_address:
+        failed_attempts = db.scalar(
+            select(func.count(AuditLog.id)).where(
+                AuditLog.action == "auth.login_failed",
+                AuditLog.ip_address == ip_address,
+                AuditLog.created_at >= datetime.now(UTC) - timedelta(minutes=15),
+            )
+        ) or 0
+        if failed_attempts >= 5:
+            raise HTTPException(
+                status_code=429,
+                detail="Trop de tentatives. Réessayez dans quelques minutes.",
+                headers={"Retry-After": "900"},
+            )
     user = _find_user_by_login(db, form.username)
     if user is None or not verify_password(form.password, user.password_hash):
         record_audit(

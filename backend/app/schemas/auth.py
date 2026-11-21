@@ -8,8 +8,10 @@ class RegisterRequest(BaseModel):
     full_name: str = Field(min_length=2, max_length=160)
     email: str | None = Field(default=None, max_length=320)
     phone: str | None = Field(default=None, max_length=32)
-    password: str = Field(min_length=12, max_length=128)
+    password: str = Field(min_length=6, max_length=128)
     merchant_name: str = Field(min_length=2, max_length=160)
+    merchant_phone: str | None = Field(default=None, max_length=32)
+    merchant_address: str | None = Field(default=None, max_length=255)
 
     @field_validator("full_name", "merchant_name")
     @classmethod

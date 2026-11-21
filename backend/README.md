@@ -11,8 +11,7 @@ API Python destinée à la gestion interne des boutiques : produits, stock, vent
 - Docker Compose pour lancer l’API, qui se connecte à une instance PostgreSQL déjà disponible.
 
 L’application FastAPI expose les routes de santé, d’authentification, de boutiques,
-de catalogue, de photos produit et de stock. Les routes ventes, clients et dépenses
-restent à développer.
+de catalogue, de stock, de ventes, de clients, de crédits, de dépenses, de rapports et de synchronisation hors ligne.
 
 ## Démarrage local avec Docker
 
@@ -86,6 +85,67 @@ sont considérés comme réglés en totalité, tandis que `credit` crée une ven
 route exige aussi `Idempotency-Key` ; `X-Device-ID` distingue les appareils pour les
 reprises après coupure réseau.
 
+## Dépenses, tableau de bord et rapports
+
+Les dépenses sont isolées par boutique sous `/api/v1/merchants/{merchant_id}/expenses` :
+`GET` liste et filtre, `POST` crée (propriétaire ou gestionnaire), `PATCH/{expense_id}`
+modifie et `DELETE/{expense_id}` annule sans effacer l’historique. `GET /categories`
+retourne les catégories encore utilisées. Les filtres de période acceptent `today`,
+`week`, `month`, ou `start_date=YYYY-MM-DD&end_date=YYYY-MM-DD`; les dates sont
+interprétées dans le fuseau de la boutique et les deux bornes sont inclusives.
+
+- `GET /api/v1/merchants/{id}/dashboard?period=today` fournit les indicateurs et les
+  produits les plus vendus.
+- `GET /api/v1/merchants/{id}/reports/summary`, `/sales`, `/profit`, `/expenses` et
+  `/stock` fournissent les rapports filtrables.
+- `GET /api/v1/merchants/{id}/reports/export?report=sales|profit|expenses|stock`
+  renvoie un CSV UTF-8 avec BOM.
+
+Les définitions sont les suivantes : ventes nettes = total des ventes terminées après
+remises ; encaissé = paiements immédiats des ventes + remboursements de crédits ;
+crédit créé/remboursé = écritures correspondantes du journal ; crédit restant = solde
+du journal à la fin de la période ; bénéfice brut estimé = montant des lignes vendues
+moins leur coût d’achat historique et la remise de vente ; résultat estimé = bénéfice
+brut estimé moins dépenses non annulées. Ce résultat est une estimation de gestion,
+pas un bénéfice comptable certifié. Les périodes utilisent le fuseau IANA de la boutique.
+
+## Stockage local et synchronisation hors ligne (Étape 5)
+
+L'API de synchronisation permet aux appareils mobiles et caisses de fonctionner sans
+réseau, d'empiler leurs opérations localement et de les envoyer au serveur dès le
+retour de la connexion :
+
+- `POST /api/v1/merchants/{merchant_id}/sync/push` (et `/api/v1/sync/push`) :
+  Accepte un lot d'opérations hors ligne (`sale.create`, `credit.repayment`,
+  `expense.create`, `client.create`, `client.update`, `product.create`, `product.update`,
+  `category.create`, `stock.movement`).
+  - Chaque opération dispose d'un identifiant `operation_id`, d'une clé d'idempotence
+    `idempotency_key` et de son horodatage local `occurred_at`.
+  - **Idempotence stricte** : si une opération a déjà été traitée pour le couple
+    `(device_id, idempotency_key)`, le serveur renvoie le résultat mis en cache avec le
+    statut `duplicate` sans dupliquer l'opération ni le stock.
+  - **Tolérance aux erreurs partielles** : chaque opération s'exécute dans un point de
+    sauvegarde (savepoint) dédié. Un rejet ou un conflit sur une opération n'annule pas
+    les autres opérations valides du lot, permettant au client de vider sa file locale
+    des opérations confirmées tout en conservant les brouillons en erreur.
+  - **Détection des conflits** : pour les mises à jour de fiches (`client.update`,
+    `product.update`), le champ optionnel `client_updated_at` vérifie que la fiche n'a
+    pas été modifiée de manière concurrente sur le serveur. En cas de conflit, le statut
+    `conflict` est renvoyé avec les métadonnées actuelles du serveur.
+  - **Préservation des événements métiers** : les ventes et remboursements sont enregistrés
+    avec leurs lignes, déductions de stock et écritures de crédit de manière atomique.
+
+- `GET /api/v1/merchants/{merchant_id}/sync/pull?cursor=...&limit=...` (et `/api/v1/sync/pull`) :
+  Synchronisation descendante incrémentale. Fournit toutes les créations et mises à jour
+  (catégories, produits avec stock calculé, clients avec solde de crédit, ventes,
+  remboursements, dépenses et mouvements de stock) survenues depuis la valeur du
+  `cursor` ISO 8601. Renvoie `next_cursor` pour le prochain appel et `has_more`.
+
+- `GET /api/v1/merchants/{merchant_id}/sync/status` (et `/api/v1/sync/status`) :
+  Retourne l'état de synchronisation de la boutique, le dernier horodatage de synchronisation,
+  le nombre total d'opérations et le nombre d'opérations associées à l'appareil (`device_id`
+  ou en-tête `X-Device-ID`).
+
 L’étape 1 ajoute `audit_logs`. Comme le reste du schéma existe déjà, appliquer seulement
 la migration additive (elle ne recrée pas les autres tables) :
 
@@ -148,6 +208,6 @@ backend/
 └── pyproject.toml
 ```
 
-Les routes métier à venir devront utiliser les dépendances d’authentification et de
-sélection de boutique (`require_active_merchant`) afin de vérifier l’appartenance à la
-boutique pour chaque requête. Les sessions SQLAlchemy sont limitées à une requête.
+Les routes métier utilisent les dépendances d’authentification et de sélection de
+boutique afin de vérifier l’appartenance à la boutique pour chaque requête. Les sessions
+SQLAlchemy sont limitées à une requête.
