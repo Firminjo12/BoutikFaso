@@ -4,7 +4,7 @@ Boutik Faso est une application de gestion destinée aux commerçants. Elle perm
 
 L’application n’est pas une boutique en ligne : elle ne propose ni commande en ligne, ni panier destiné aux acheteurs, ni livraison. Les ventes sont enregistrées par le commerçant depuis la caisse.
 
-L’interface Flutter est conçue pour mobile et ordinateur. Les maquettes et l’ordre des fonctionnalités sont disponibles dans [`maquette/`](maquette/) et [`planing/`](planing/).
+L’interface Flutter est conçue pour mobile et ordinateur.
 
 ## Fonctionnalités de l’application actuelle
 
@@ -82,17 +82,6 @@ lib/
 ```
 
 Quand l’intégration des données commencera, les contrôleurs GetX devront utiliser des dépôts par domaine. Ces dépôts coordonneront Drift/SQLite et Dio ; les règles d’autorisation et la validation définitive des ventes resteront côté serveur.
-
-## Plan backend
-
-Le plan détaillé est dans [`planing/Plan backend Boutik Faso.md`](planing/Plan%20backend%20Boutik%20Faso.md). Il couvre notamment :
-
-1. Comptes, boutiques, membres et isolation des données.
-2. Catalogue, catégories, photos et mouvements de stock.
-3. Clients, ventes, dettes, remboursements et reçus.
-4. Dépenses, tableau de bord et rapports.
-5. Base locale, file d’opérations hors ligne et synchronisation idempotente.
-6. Tests de sécurité, sauvegardes et mise en production.
 
 ## Prérequis
 
