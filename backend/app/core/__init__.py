@@ -1,0 +1,1 @@
+"""Configuration transversale et sécurité."""

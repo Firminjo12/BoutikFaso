@@ -1,0 +1,11 @@
+[Unit]
+Description=Sauvegarde quotidienne de PostgreSQL Boutik Faso
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=30m
+Unit=boutik-faso-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,9 @@
+[Unit]
+Description=Sauvegarde PostgreSQL Boutik Faso
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=REMPLACER_PAR_UTILISATEUR_SERVICE
+WorkingDirectory=/opt/boutik-faso/backend
+ExecStart=/opt/boutik-faso/backend/scripts/backup_postgres.sh
