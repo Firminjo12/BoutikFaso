@@ -1,5 +1,11 @@
 abstract final class AppRoutes {
-  static const home = '/';
+  static const welcome = '/';
+  static const shopSetup = '/create-shop';
+  static const shopSuccess = '/create-shop/success';
+  static const login = '/login';
+  static const register = '/register';
+  static const passwordRecovery = '/password-recovery';
+  static const home = '/dashboard';
   static const sales = '/sales';
   static const products = '/products';
   static const stock = '/stock';

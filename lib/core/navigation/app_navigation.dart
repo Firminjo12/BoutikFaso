@@ -14,7 +14,7 @@ class AppShell extends StatelessWidget {
   final Widget child;
 
   static const _desktopItems = <NavigationItem>[
-    NavigationItem('Tableau de bord', Icons.dashboard_outlined, '/'),
+    NavigationItem('Tableau de bord', Icons.dashboard_outlined, AppRoutes.home),
     NavigationItem('Ventes / Caisse', Icons.point_of_sale_outlined, '/sales'),
     NavigationItem('Produits', Icons.inventory_2_outlined, '/products'),
     NavigationItem('Stock', Icons.warehouse_outlined, '/stock'),
@@ -26,7 +26,7 @@ class AppShell extends StatelessWidget {
   ];
 
   static const _mobileItems = <NavigationItem>[
-    NavigationItem('Accueil', Icons.home_outlined, '/'),
+    NavigationItem('Accueil', Icons.home_outlined, AppRoutes.home),
     NavigationItem('Caisse', Icons.point_of_sale_outlined, '/sales'),
     NavigationItem('Stock', Icons.warehouse_outlined, '/stock'),
     NavigationItem('Panier', Icons.shopping_basket_outlined, '/basket'),
@@ -228,6 +228,10 @@ class _MerchantMenu extends StatelessWidget {
     return PopupMenuButton<String>(
       tooltip: 'Changer de commerçant',
       onSelected: (value) async {
+        if (value == 'settings') {
+          Get.offAllNamed<void>(AppRoutes.settings);
+          return;
+        }
         if (value == 'add') {
           final name = await Get.dialog<String>(const _AddWorkspaceDialog());
           if (name == null) return;
@@ -271,6 +275,17 @@ class _MerchantMenu extends StatelessWidget {
               Icon(Icons.add_business_outlined, size: 18),
               SizedBox(width: 10),
               Text('Ajouter un commerçant'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: 'settings',
+          child: Row(
+            children: [
+              Icon(Icons.settings_outlined, size: 18),
+              SizedBox(width: 10),
+              Text('Paramètres'),
             ],
           ),
         ),

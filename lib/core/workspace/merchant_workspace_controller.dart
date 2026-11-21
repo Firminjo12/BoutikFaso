@@ -23,6 +23,12 @@ class MerchantWorkspace {
     required this.movements,
     required this.sales,
     required this.expenses,
+    this.phone = '',
+    this.location = '',
+    this.currencyCode = 'XOF',
+    this.lowStockThreshold = 5,
+    this.acceptedPaymentMethods = const ['Espèces', 'Orange Money'],
+    this.creditSalesEnabled = true,
   });
 
   final String id;
@@ -34,6 +40,12 @@ class MerchantWorkspace {
   final List<StockMovement> movements;
   final List<Sale> sales;
   final List<Expense> expenses;
+  final String phone;
+  final String location;
+  final String currencyCode;
+  final int lowStockThreshold;
+  final List<String> acceptedPaymentMethods;
+  final bool creditSalesEnabled;
 
   MerchantWorkspace copyWith({
     String? name,
@@ -44,6 +56,12 @@ class MerchantWorkspace {
     List<StockMovement>? movements,
     List<Sale>? sales,
     List<Expense>? expenses,
+    String? phone,
+    String? location,
+    String? currencyCode,
+    int? lowStockThreshold,
+    List<String>? acceptedPaymentMethods,
+    bool? creditSalesEnabled,
   }) => MerchantWorkspace(
     id: id,
     name: name ?? this.name,
@@ -54,6 +72,13 @@ class MerchantWorkspace {
     movements: movements ?? this.movements,
     sales: sales ?? this.sales,
     expenses: expenses ?? this.expenses,
+    phone: phone ?? this.phone,
+    location: location ?? this.location,
+    currencyCode: currencyCode ?? this.currencyCode,
+    lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
+    acceptedPaymentMethods:
+        acceptedPaymentMethods ?? this.acceptedPaymentMethods,
+    creditSalesEnabled: creditSalesEnabled ?? this.creditSalesEnabled,
   );
 }
 
@@ -99,6 +124,41 @@ class MerchantWorkspaceController extends GetxController {
     return id;
   }
 
+  bool updateWorkspaceSettings({
+    String? name,
+    String? phone,
+    String? location,
+    String? currencyCode,
+    int? lowStockThreshold,
+    List<String>? acceptedPaymentMethods,
+    bool? creditSalesEnabled,
+  }) {
+    final active = activeWorkspace;
+    final cleanName = name?.trim();
+    if (cleanName != null &&
+        (cleanName.isEmpty ||
+            workspaces.any(
+              (workspace) =>
+                  workspace.id != active.id &&
+                  workspace.name.toLowerCase() == cleanName.toLowerCase(),
+            ))) {
+      return false;
+    }
+    final index = workspaces.indexWhere(
+      (workspace) => workspace.id == active.id,
+    );
+    workspaces[index] = active.copyWith(
+      name: cleanName,
+      phone: phone,
+      location: location,
+      currencyCode: currencyCode,
+      lowStockThreshold: lowStockThreshold,
+      acceptedPaymentMethods: acceptedPaymentMethods,
+      creditSalesEnabled: creditSalesEnabled,
+    );
+    return true;
+  }
+
   bool switchTo(String id) {
     if (id == activeWorkspaceId.value ||
         !workspaces.any((workspace) => workspace.id == id)) {
@@ -135,7 +195,16 @@ class MerchantWorkspaceController extends GetxController {
       (item) => item.id == activeWorkspaceId.value,
     );
     if (index == -1) return;
-    workspaces[index] = _capture(activeWorkspaceId.value, activeWorkspace.name);
+    final current = activeWorkspace;
+    workspaces[index] = _capture(activeWorkspaceId.value, current.name)
+        .copyWith(
+          phone: current.phone,
+          location: current.location,
+          currencyCode: current.currencyCode,
+          lowStockThreshold: current.lowStockThreshold,
+          acceptedPaymentMethods: current.acceptedPaymentMethods,
+          creditSalesEnabled: current.creditSalesEnabled,
+        );
   }
 
   MerchantWorkspace _capture(String id, String name) => MerchantWorkspace(
